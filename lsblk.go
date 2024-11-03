@@ -87,7 +87,7 @@ func main() {
 	}
 
 	if *versionFlag {
-		fmt.Println("mac lsblk v0.1 made by jake.trock.com :^]")
+		fmt.Println("mac lsblk v0.1 hacked together by jake.trock.com :^]")
 		return
 	}
 
@@ -113,7 +113,6 @@ func main() {
 
 	// Get mountpoints
 	mounts := getMounts(dfOut.String())
-	fmt.Println(mounts)
 	disks := parseDiskutilOutput(out.String(), mounts)
 
 	// Apply include and exclude filters
@@ -255,33 +254,81 @@ func parseDiskutilOutput(output string, mounts map[string]string) []Disk {
 	for _, line := range lines {
 		if diskHeaderRegex.MatchString(line) {
 			matches := diskHeaderRegex.FindStringSubmatch(line)
+			cmd := exec.Command("diskutil", "info", matches[1])
+			out, _ := cmd.Output()
+			info := string(out)
 			currentDisk = &Disk{
-				Name:       matches[1],
-				Type:       "disk",
-				Identifier: matches[1],
+				Name: func() string {
+					if matches[1] != "" {
+						return matches[1]
+					}
+					return getValueForKey(info, "Volume Name:")
+				}(),
+				Type: "disk",
+				Identifier: func() string {
+					if matches[1] != "" {
+						return matches[1]
+					}
+					return getValueForKey(info, "Device Identifier:")
+				}(),
+				Size: getValueForKey(info, "Total Size:"),
+				Mountpoint: func() string {
+					if matches[1] != "" {
+						return mounts[matches[1]]
+					}
+					return mounts[getValueForKey(info, "Volume Name:")]
+				}(),
+				FSType:        getValueForKey(info, "Type (Bundle):"),
+				Label:         getValueForKey(info, "Volume Name:"),
+				UUID:          getValueForKey(info, "Volume UUID:"),
+				PartitionType: getValueForKey(info, "Partition Type:"),
 			}
 			// Call parseInfo to fill additional info
-			parseInfo(currentDisk.Identifier, currentDisk, mounts)
 			disks = append(disks, *currentDisk)
 		} else if diskInfoRegex.MatchString(line) {
 			matches := diskInfoRegex.FindStringSubmatch(line)
+			cmd := exec.Command("diskutil", "info", matches[1])
+			out, _ := cmd.Output()
+			info := string(out)
 			currentDisk = &Disk{
-				Name:       matches[1],
-				Size:       matches[2],
-				Type:       "disk",
-				Identifier: matches[1],
+				Name: func() string {
+					if matches[1] != "" {
+						return matches[1]
+					}
+					return getValueForKey(info, "Volume Name:")
+				}(),
+				Type: "disk",
+				Identifier: func() string {
+					if matches[1] != "" {
+						return matches[1]
+					}
+					return getValueForKey(info, "Device Identifier:")
+				}(),
+				Size: getValueForKey(info, "Total Size:"),
+				Mountpoint: func() string {
+					if matches[1] != "" {
+						return mounts[matches[1]]
+					}
+					return mounts[getValueForKey(info, "Volume Name:")]
+				}(),
+				FSType:        getValueForKey(info, "Type (Bundle):"),
+				Label:         getValueForKey(info, "Volume Name:"),
+				UUID:          getValueForKey(info, "Volume UUID:"),
+				PartitionType: getValueForKey(info, "Partition Type:"),
 			}
-			parseInfo(currentDisk.Identifier, currentDisk, mounts)
 			disks = append(disks, *currentDisk)
 		} else if partitionRegex.MatchString(line) && currentDisk != nil {
 			matches := partitionRegex.FindStringSubmatch(line)
 			partition := Partition{
-				Name:       matches[3],
-				Type:       matches[2],
-				Size:       matches[4],
-				Identifier: matches[5],
+				Name:          matches[3],
+				Type:          matches[2],
+				Size:          matches[4],
+				Identifier:    matches[5],
+				PartitionType: getValueForKey(matches[5], "Partition Type:"),
+				UUID:          getValueForKey(matches[5], "Volume UUID:"),
+				Label:         getValueForKey(matches[5], "Volume Name:"),
+				Mountpoint:    mounts["/dev/"+matches[5]],
 			}
-			parseInfo(matches[5], currentDisk, mounts)
 			// Add partition to the last disk in the slice
 			diskIndex := len(disks) - 1
 			disks[diskIndex].Partitions = append(disks[diskIndex].Partitions, partition)
@@ -289,30 +336,6 @@ func parseDiskutilOutput(output string, mounts map[string]string) []Disk {
 	}
 
 	return disks
-}
-
-func parseInfo(identifier string, disk *Disk, mounts map[string]string) {
-	cmd := exec.Command("diskutil", "info", identifier)
-	out, err := cmd.Output()
-	if err != nil {
-		return
-	}
-	info := string(out)
-	disk.Label = getValueForKey(info, "Volume Name:")
-	disk.Mountpoint = getValueForKey(info, "Mount Point:")
-	disk.FSType = getValueForKey(info, "File System:")
-	disk.UUID = getValueForKey(info, "Disk / Partition UUID:")
-	disk.PartitionType = getValueForKey(info, "Partition Type:")
-	if disk.Mountpoint == "" {
-		fmt.Println(disk.Name, identifier, mounts["/dev/"+disk.Name])
-		for partition, mountpoint := range mounts {
-			if strings.Contains(partition, disk.Name) {
-				fmt.Println("jjjjj ", partition, mountpoint)
-			}
-		}
-		disk.Mountpoint = mounts["/dev/"+disk.Name]
-	}
-	// Add any other fields as needed
 }
 
 func sortDisks(disks []Disk, sortColumn string) {
