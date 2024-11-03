@@ -83,6 +83,7 @@ func main() {
 
 	if *helpFlag {
 		flag.Usage()
+		fmt.Println("mac lsblk v0.1 hacked together by jake.trock.com :^]")
 		return
 	}
 
@@ -101,7 +102,7 @@ func main() {
 		return
 	}
 
-	// Run df -h
+	// Run df
 	dfCmd := exec.Command("df")
 	var dfOut bytes.Buffer
 	dfCmd.Stdout = &dfOut
