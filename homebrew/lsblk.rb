@@ -6,10 +6,7 @@ class lsblk < Formula
   sha256 "fcd9bc61499ea0b02736a22f6b7da016fe6ca838793c9636bce3efdb8418b257"
   license "GNU GPLv3"
 
-  depends_on "go" => :build
-
   def install
-    system "make", "build"
     bin.install "bin/lsblk"
   end
 
