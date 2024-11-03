@@ -1,5 +1,5 @@
 # lsblk.rb
-class Lsblk < Formula
+class lsblk < Formula
   desc "Description of your lsblk tool"
   homepage "https://github.com/JakeTrock/gosblk"
   url "https://github.com/JakeTrock/gosblk/archive/refs/tags/v1.tar.gz"
