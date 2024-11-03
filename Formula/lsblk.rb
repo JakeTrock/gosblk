@@ -1,5 +1,5 @@
 # lsblk.rb
-class lsblk < Formula
+class Lsblk < Formula
   desc "LSBLK for macos implemented in golang"
   homepage "https://github.com/JakeTrock/gosblk"
   url "https://github.com/JakeTrock/gosblk/archive/refs/tags/v1.0.0.tar.gz"
